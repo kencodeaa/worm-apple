@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Apple Worm - 15 Màn Siêu Khó</title>
+    <style>
+        :root {
+            --sky-top: #7dd3fc;
+            --sky-bottom: #e0f2fe;
+            --panel-bg: rgba(15, 23, 42, 0.92);
+            --text-light: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(180deg, #0b1120 0%, #1e293b 100%);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            padding: 8px;
+        }
+
+        .game-wrapper {
+            width: 100%;
+            max-width: 760px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 8px 12px;
+            border-radius: 14px;
+            backdrop-filter: blur(8px);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .level-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .level-badge {
+            background: #dc2626;
+            color: #ffffff;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+
+        .level-select {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            cursor: pointer;
+            outline: none;
+            max-width: 215px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icon-btn {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.15s;
+        }
+
+        .icon-btn:hover { background: #334155; }
+        .icon-btn:active { transform: scale(0.95); }
+        .icon-btn.hint-btn {
+            background: #ca8a04;
+            border-color: #eab308;
+            color: #fefce8;
+        }
+        .icon-btn.hint-btn:hover { background: #eab308; color: #422006; }
+
+        .canvas-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+            border: 3px solid #334155;
+            background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .toast {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.88);
+            color: #fde047;
+            border: 1px solid rgba(250, 204, 21, 0.5);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 15;
+            white-space: nowrap;
+        }
+
+        .toast.show { opacity: 1; }
+
+        .dpad-overlay {
+            position: absolute;
+            right: 16px;
+            bottom: 14px;
+            display: grid;
+            grid-template-columns: repeat(3, 46px);
+            grid-template-rows: repeat(3, 46px);
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .dpad-btn {
+            background: rgba(15, 23, 42, 0.36);
+            border: 2px solid rgba(255, 255, 255, 0.82);
+            border-radius: 50%;
+            color: #ffffff;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+            transition: transform 0.08s, background 0.1s;
+        }
+
+        .dpad-btn:active {
+            background: rgba(255, 255, 255, 0.85);
+            color: #0f172a;
+            transform: scale(0.9);
+        }
+
+        .dpad-btn.hint-glow {
+            background: rgba(234, 179, 8, 0.85);
+            border-color: #fef08a;
+            color: #422006;
+            box-shadow: 0 0 18px #facc15;
+            transform: scale(1.08);
+        }
+
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 3; }
+
+        .modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.84);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            text-align: center;
+            padding: 20px;
+            z-index: 20;
+            transition: opacity 0.2s;
+        }
+
+        .modal.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal h2 { font-size: 1.8rem; color: #ffffff; }
+        .modal p { color: #cbd5e1; font-size: 0.95rem; max-width: 350px; }
+
+        .primary-btn {
+            background: #22c55e;
+            color: #052e16;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45);
+        }
+
+        .primary-btn:active { transform: scale(0.95); }
+
+        .hint-bar {
+            text-align: center;
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 520px) {
+            .dpad-overlay {
+                grid-template-columns: repeat(3, 40px);
+                grid-template-rows: repeat(3, 40px);
+                right: 10px;
+                bottom: 10px;
+            }
+            .hint-bar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+    <div class="top-bar">
+        <div class="level-info">
+            <span class="level-badge" id="level-label">Màn 1 / 15</span>
+            <select class="level-select" id="level-select" aria-label="Chọn màn chơi"></select>
+        </div>
+        <div class="action-btns">
+            <button class="icon-btn hint-btn" id="hint-btn" title="Gợi ý bước tiếp theo (H)">💡 Gợi ý</button>
+            <button class="icon-btn" id="undo-btn" title="Lùi 1 bước (Z)">↩ Lùi</button>
+            <button class="icon-btn" id="reset-btn" title="Chơi lại màn (R)">↻ Lại</button>
+        </div>
+    </div>
+
+    <div class="canvas-box">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <div class="toast" id="toast"></div>
+
+        <div class="dpad-overlay">
+            <button class="dpad-btn btn-up" data-dir="up">▲</button>
+            <button class="dpad-btn btn-left" data-dir="left">◀</button>
+            <button class="dpad-btn btn-right" data-dir="right">▶</button>
+            <button class="dpad-btn btn-down" data-dir="down">▼</button>
+        </div>
+
+        <div class="modal hidden" id="modal">
+            <h2 id="modal-title">Qua màn!</h2>
+            <p id="modal-desc">Bạn đã đưa chú sâu vào lỗ đen an toàn.</p>
+            <button class="primary-btn" id="modal-btn">Màn tiếp theo</button>
+        </div>
+    </div>
+
+    <div class="hint-bar">
+        Mũi tên / WASD để bò • <strong>H</strong>: Gợi ý AI • <strong>Z</strong>: Hoàn tác • <strong>R</strong>: Chơi lại • 🪨 Khối đá xám có thể đẩy ngang để phá gai!
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const levelLabel = document.getElementById('level-label');
+const levelSelect = document.getElementById('level-select');
+const hintBtn = document.getElementById('hint-btn');
+const undoBtn = document.getElementById('undo-btn');
+const resetBtn = document.getElementById('reset-btn');
+const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modal-title');
+const modalDesc = document.getElementById('modal-desc');
+const modalBtn = document.getElementById('modal-btn');
+const toast = document.getElementById('toast');
+
+const COLS = 16;
+const ROWS = 10;
+const TILE = 50;
+
+// Ký hiệu: '#' Đất, 'S' Gai, 'A' Táo, 'O' Đá đẩy được, 'P' Cổng, '1'..'9' Sâu ('1' là đầu)
+const LEVELS = [
+    {
+        name: "Màn 1: Cú móc qua gai",
+        map: [
+            "................",
+            "....P...........",
+            "................",
+            "......A.........",
+            ".......###......",
+            ".321..A.........",
+            ".#####SS##......",
+            "......##........",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 2: Huyền thoại 53",
+        map: [
+            "................",
+            "...........P....",
+            "................",
+            ".......A........",
+            "....###321......",
+            ".....#A..#......",
+            "..#....S.S......",
+            "..#########.....",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 3: Đừng vội ăn táo!",
+        map: [
+            "................",
+            "................",
+            ".........P......",
+            "................",
+            ".......###......",
+            "................",
+            "..321.A.........",
+            ".#####..........",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 4: Hòn đá phá gai",
+        map: [
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "............P...",
+            "..321.O.........",
+            ".######SSS###...",
+            ".......###......",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 5: Bệ phóng bằng đá",
+        map: [
+            "................",
+            "................",
+            "...........P....",
+            "................",
+            "................",
+            "................",
+            "..321.O.....A...",
+            ".############...",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 6: Hốc quay đầu",
+        map: [
+            "..P.............",
+            "................",
+            "................",
+            "..321...........",
+            "..##.#...###....",
+            "......####..#...",
+            "...........A#...",
+            "....#########...",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 7: Treo đuôi ăn táo",
+        map: [
+            "................",
+            "................",
+            "................",
+            ".321........P...",
+            ".###..##........",
+            "........A.......",
+            ".........##.....",
+            "....SSSSS.......",
+            "....#####.......",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 8: Cầu đôi hai đá",
+        map: [
+            "................",
+            "................",
+            "................",
+            "................",
+            "....O...........",
+            "....##......P...",
+            ".321.O..........",
+            ".#####SSSS###...",
+            "......####......",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 9: Mê cung chữ S",
+        map: [
+            "...............P",
+            "................",
+            "....########....",
+            "................",
+            "...A............",
+            "..#########.....",
+            "................",
+            "..321......A....",
+            "..###########...",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 10: Bẫy hai quả táo",
+        map: [
+            "................",
+            "................",
+            ".............P..",
+            "................",
+            ".........##.....",
+            "................",
+            "..A321..A.......",
+            "..#####.........",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 11: Giếng sâu",
+        map: [
+            "................",
+            "................",
+            "..321........P..",
+            "..###...........",
+            "..........A.....",
+            ".........##.....",
+            "........A.......",
+            ".....A..........",
+            ".....###........",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 12: Thả đá từ trên cao",
+        map: [
+            "................",
+            "................",
+            "...321O.........",
+            "...######.......",
+            "................",
+            "............P...",
+            "................",
+            ".....A.SSSS.....",
+            ".############...",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 13: Vòng xoáy chữ G",
+        map: [
+            "................",
+            "..............P.",
+            "................",
+            "................",
+            "....########....",
+            ".321......A#....",
+            ".###.#####.#....",
+            "...#A......#....",
+            "...#########....",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 14: Pháo đài gai",
+        map: [
+            "................",
+            "................",
+            ".............P..",
+            ".........A......",
+            ".321.O..........",
+            ".#####....###...",
+            "......SSS.......",
+            "......###.......",
+            "................",
+            "................"
+        ]
+    },
+    {
+        name: "Màn 15: Trùm cuối",
+        map: [
+            "................",
+            "..........P.....",
+            "................",
+            ".321O...........",
+            ".#####......A...",
+            "............##..",
+            "................",
+            "...........A....",
+            "...A..SSS.......",
+            ".#############.."
+        ]
+    }
+];
+
+let currentLevelIdx = 0;
+let walls = [];
+let spikes = [];
+let apples = [];
+let stones = [];
+let portal = { x: 0, y: 0 };
+let worm = [];
+let history = [];
+let isLocked = false;
+let animFrame = 0;
+let toastTimer = null;
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, type, duration, slideTo = null) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, audioCtx.currentTime + duration);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function clearHintGlow() {
+    document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('hint-glow'));
+}
+
+LEVELS.forEach((lvl, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = lvl.name;
+    levelSelect.appendChild(opt);
+});
+
+levelSelect.addEventListener('change', (e) => loadLevel(parseInt(e.target.value)));
+
+function loadLevel(idx) {
+    currentLevelIdx = idx;
+    levelSelect.value = idx;
+    levelLabel.textContent = `Màn ${idx + 1} / ${LEVELS.length}`;
+    modal.classList.add('hidden');
+    clearHintGlow();
+    isLocked = false;
+    history = [];
+
+    walls = [];
+    spikes = [];
+    apples = [];
+    stones = [];
+    let wormParts = {};
+
+    const grid = LEVELS[idx].map;
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const ch = grid[r][c];
+            if (ch === '#') walls.push({ x: c, y: r });
+            else if (ch === 'S') spikes.push({ x: c, y: r });
+            else if (ch === 'A') apples.push({ x: c, y: r });
+            else if (ch === 'O') stones.push({ x: c, y: r });
+            else if (ch === 'P') portal = { x: c, y: r };
+            else if (ch >= '1' && ch <= '9') {
+                wormParts[parseInt(ch)] = { x: c, y: r };
+            }
+        }
+    }
+
+    worm = Object.keys(wormParts)
+        .sort((a, b) => a - b)
+        .map(k => wormParts[k]);
+}
+
+function saveState() {
+    history.push({
+        worm: worm.map(p => ({ ...p })),
+        apples: apples.map(a => ({ ...a })),
+        stones: stones.map(s => ({ ...s })),
+        spikes: spikes.map(s => ({ ...s }))
+    });
+    if (history.length > 100) history.shift();
+}
+
+function undoMove() {
+    if (isLocked || history.length === 0) return;
+    clearHintGlow();
+    const prev = history.pop();
+    worm = prev.worm;
+    apples = prev.apples;
+    stones = prev.stones;
+    spikes = prev.spikes;
+    playSound(300, 'triangle', 0.08);
+}
+
+// ==================== LOGIC VẬT LÝ CHUNG (DÙNG CHO CẢ GAME & AI GỢI Ý) ====================
+
+function hasAt(arr, x, y) { return arr.some(item => item.x === x && item.y === y); }
+function idxAt(arr, x, y) { return arr.findIndex(item => item.x === x && item.y === y); }
+
+function isWormAt(wArr, x, y, ignoreTail = false) {
+    const limit = ignoreTail ? wArr.length - 1 : wArr.length;
+    for (let i = 0; i < limit; i++) {
+        if (wArr[i].x === x && wArr[i].y === y) return true;
+    }
+    return false;
+}
+
+function simulateMove(state, dx, dy) {
+    const w = state.worm.map(p => ({ ...p }));
+    const a = state.apples.map(p => ({ ...p }));
+    const st = state.stones.map(p => ({ ...p }));
+    const sp = state.spikes.map(p => ({ ...p }));
+
+    const nx = w[0].x + dx;
+    const ny = w[0].y + dy;
+
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return null;
+    if (hasAt(walls, nx, ny)) return null;
+
+    // Kiểm tra đẩy đá (chỉ đẩy ngang)
+    const stoneIdx = idxAt(st, nx, ny);
+    let pushedStone = false;
+    if (stoneIdx !== -1) {
+        if (dy !== 0) return null; // Không đẩy đá lên/xuống được
+        const sx = nx + dx;
+        const sy = ny;
+        if (sx < 0 || sx >= COLS) return null;
+        if (hasAt(walls, sx, sy) || hasAt(st, sx, sy) || hasAt(a, sx, sy) || isWormAt(w, sx, sy, true) || (sx === portal.x && sy === portal.y)) {
+            return null;
+        }
+        st[stoneIdx].x = sx;
+        st[stoneIdx].y = sy;
+        // Đá đẩy trúng gai -> phá hủy gai
+        const spIdx = idxAt(sp, sx, sy);
+        if (spIdx !== -1) sp.splice(spIdx, 1);
+        pushedStone = true;
+    }
+
+    const appleIdx = idxAt(a, nx, ny);
+    const willEat = appleIdx !== -1;
+    if (isWormAt(w, nx, ny, !willEat)) return null;
+
+    w.unshift({ x: nx, y: ny });
+    if (willEat) a.splice(appleIdx, 1);
+    else w.pop();
+
+    if (hasAt(sp, nx, ny)) return { status: 'lose', reason: 'Úi! Chú sâu đâm trúng bẫy gai.', worm: w, apples: a, stones: st, spikes: sp };
+    if (nx === portal.x && ny === portal.y) return { status: 'win', worm: w, apples: a, stones: st, spikes: sp };
+
+    // Vòng lặp trọng lực tức thời (dùng cho AI)
+    return { status: 'ok', pushedStone, willEat, worm: w, apples: a, stones: st, spikes: sp };
+}
+
+function stepGravityOnce(w, a, st, sp) {
+    let moved = false;
+
+    // 1. Trọng lực cho đá
+    for (let i = st.length - 1; i >= 0; i--) {
+        const stone = st[i];
+        const by = stone.y + 1;
+        const supported = hasAt(walls, stone.x, by) ||
+                          hasAt(a, stone.x, by) ||
+                          isWormAt(w, stone.x, by, false) ||
+                          st.some((other, j) => j !== i && other.x === stone.x && other.y === by);
+        if (!supported) {
+            stone.y += 1;
+            moved = true;
+            const spIdx = idxAt(sp, stone.x, stone.y);
+            if (spIdx !== -1) sp.splice(spIdx, 1);
+            if (stone.y >= ROWS) st.splice(i, 1);
+        }
+    }
+
+    // 2. Trọng lực cho sâu
+    let wormSupported = false;
+    for (const seg of w) {
+        const by = seg.y + 1;
+        if (hasAt(walls, seg.x, by) || hasAt(a, seg.x, by) || hasAt(st, seg.x, by)) {
+            wormSupported = true;
+            break;
+        }
+    }
+
+    if (!wormSupported) {
+        for (const seg of w) seg.y += 1;
+        moved = true;
+
+        if (w[0].x === portal.x && w[0].y === portal.y) return 'win';
+        for (const seg of w) {
+            if (hasAt(sp, seg.x, seg.y)) return 'lose_spike';
+        }
+        if (w.every(seg => seg.y >= ROWS)) return 'lose_void';
+    }
+
+    return moved ? 'falling' : 'settled';
+}
+
+function moveWorm(dx, dy) {
+    if (isLocked) return;
+    clearHintGlow();
+
+    const res = simulateMove({ worm, apples, stones, spikes }, dx, dy);
+    if (!res) {
+        playSound(140, 'square', 0.06);
+        return;
+    }
+
+    saveState();
+    worm = res.worm;
+    apples = res.apples;
+    stones = res.stones;
+    spikes = res.spikes;
+
+    if (res.pushedStone) playSound(180, 'triangle', 0.1, 130);
+    else if (res.willEat) playSound(520, 'sine', 0.14, 780);
+    else playSound(380, 'sine', 0.06, 460);
+
+    if (res.status === 'win') { triggerWin(); return; }
+    if (res.status === 'lose') { triggerLose(res.reason); return; }
+
+    // Áp dụng trọng lực theo từng khung hình rơi
+    isLocked = true;
+    function fallLoop() {
+        const gRes = stepGravityOnce(worm, apples, stones, spikes);
+        if (gRes === 'win') { triggerWin(); return; }
+        if (gRes === 'lose_spike') { triggerLose("Chú sâu rơi trúng bẫy gai!"); return; }
+        if (gRes === 'lose_void') { triggerLose("Chú sâu đã rơi xuống vực!"); return; }
+        if (gRes === 'falling') {
+            setTimeout(fallLoop, 75);
+        } else {
+            isLocked = false;
+        }
+    }
+    setTimeout(fallLoop, 40);
+}
+
+// ==================== AI TÌM ĐƯỜNG GỢI Ý (BFS SOLVER) ====================
+
+function computeHint() {
+    if (isLocked) return;
+    clearHintGlow();
+
+    const dirs = [
+        { dx: 0, dy: -1, name: 'up', label: 'Lên (▲)' },
+        { dx: 0, dy: 1, name: 'down', label: 'Xuống (▼)' },
+        { dx: -1, dy: 0, name: 'left', label: 'Trái (◀)' },
+        { dx: 1, dy: 0, name: 'right', label: 'Phải (▶)' }
+    ];
+
+    function stateKey(w, a, st) {
+        return w.map(p => `${p.x},${p.y}`).join(';') + '|' +
+               a.map(p => `${p.x},${p.y}`).join(';') + '|' +
+               st.map(p => `${p.x},${p.y}`).join(';');
+    }
+
+    const startState = {
+        worm: worm.map(p => ({ ...p })),
+        apples: apples.map(p => ({ ...p })),
+        stones: stones.map(p => ({ ...p })),
+        spikes: spikes.map(p => ({ ...p })),
+        firstDir: null
+    };
+
+    const visited = new Set([stateKey(startState.worm, startState.apples, startState.stones)]);
+    const queue = [startState];
+    let headIdx = 0;
+    const MAX_STATES = 22000;
+
+    while (headIdx < queue.length && visited.size < MAX_STATES) {
+        const curr = queue[headIdx++];
+
+        for (const d of dirs) {
+            const next = simulateMove(curr, d.dx, d.dy);
+            if (!next || next.status === 'lose') continue;
+
+            const firstDir = curr.firstDir || d;
+            if (next.status === 'win') {
+                highlightHint(firstDir);
+                return;
+            }
+
+            // Chạy hết trọng lực tức thì
+            let gRes = 'falling';
+            let guard = 0;
+            while (gRes === 'falling' && guard < 25) {
+                gRes = stepGravityOnce(next.worm, next.apples, next.stones, next.spikes);
+                guard++;
+            }
+
+            if (gRes === 'win') {
+                highlightHint(firstDir);
+                return;
+            }
+            if (gRes === 'lose_spike' || gRes === 'lose_void') continue;
+
+            const key = stateKey(next.worm, next.apples, next.stones);
+            if (!visited.has(key)) {
+                visited.add(key);
+                queue.push({
+                    worm: next.worm,
+                    apples: next.apples,
+                    stones: next.stones,
+                    spikes: next.spikes,
+                    firstDir
+                });
+            }
+        }
+    }
+
+    showToast("Không còn đường qua màn! Hãy bấm ↩ Lùi hoặc ↻ Chơi lại.");
+}
+
+function highlightHint(dir) {
+    const btn = document.querySelector(`.dpad-btn[data-dir="${dir.name}"]`);
+    if (btn) btn.classList.add('hint-glow');
+    showToast(`💡 Gợi ý: Bấm ${dir.label}`);
+    playSound(660, 'sine', 0.12);
+}
+
+function triggerWin() {
+    isLocked = true;
+    playSound(440, 'triangle', 0.35, 880);
+    setTimeout(() => {
+        if (currentLevelIdx < LEVELS.length - 1) {
+            modalTitle.textContent = "🎉 Quá đỉnh!";
+            modalDesc.textContent = `Bạn đã giải mã thành công ${LEVELS[currentLevelIdx].name}.`;
+            modalBtn.textContent = "Màn tiếp theo ➔";
+            modalBtn.onclick = () => loadLevel(currentLevelIdx + 1);
+        } else {
+            modalTitle.textContent = "🏆 Bậc thầy giải đố!";
+            modalDesc.textContent = "Bạn đã phá đảo toàn bộ 15 màn siêu khó của Apple Worm!";
+            modalBtn.textContent = "Chơi lại từ Màn 1";
+            modalBtn.onclick = () => loadLevel(0);
+        }
+        modal.classList.remove('hidden');
+    }, 180);
+}
+
+function triggerLose(reason) {
+    isLocked = true;
+    playSound(220, 'sawtooth', 0.3, 90);
+    setTimeout(() => {
+        modalTitle.textContent = "💥 Thất bại!";
+        modalDesc.textContent = reason;
+        modalBtn.textContent = "Thử lại màn này";
+        modalBtn.onclick = () => loadLevel(currentLevelIdx);
+        modal.classList.remove('hidden');
+    }, 160);
+}
+
+// ==================== VẼ ĐỒ HỌA 3D SẮC NÉT ====================
+
+function drawBackground() {
+    ctx.fillStyle = '#93c5fd';
+    ctx.beginPath();
+    ctx.moveTo(0, 360);
+    ctx.quadraticCurveTo(200, 260, 420, 340);
+    ctx.quadraticCurveTo(640, 250, 800, 330);
+    ctx.lineTo(800, 500);
+    ctx.lineTo(0, 500);
+    ctx.fill();
+
+    ctx.fillStyle = '#6ee7b7';
+    for (let x = 20; x < 820; x += 65) {
+        const h = 70 + (x % 3) * 20;
+        ctx.beginPath();
+        ctx.moveTo(x, 420);
+        ctx.lineTo(x + 25, 420 - h);
+        ctx.lineTo(x + 50, 420);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.moveTo(0, 430);
+    ctx.quadraticCurveTo(250, 390, 500, 425);
+    ctx.quadraticCurveTo(680, 405, 800, 420);
+    ctx.lineTo(800, 500);
+    ctx.lineTo(0, 500);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.lineWidth = 1;
+    for (let c = 1; c < COLS; c++) {
+        ctx.beginPath();
+        ctx.moveTo(c * TILE, 0);
+        ctx.lineTo(c * TILE, canvas.height);
+        ctx.stroke();
+    }
+    for (let r = 1; r < ROWS; r++) {
+        ctx.beginPath();
+        ctx.moveTo(0, r * TILE);
+        ctx.lineTo(canvas.width, r * TILE);
+        ctx.stroke();
+    }
+}
+
+function drawWalls() {
+    walls.forEach(w => {
+        const x = w.x * TILE;
+        const y = w.y * TILE;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+        ctx.fillRect(x + 4, y + 6, TILE, TILE);
+
+        ctx.fillStyle = '#7c4a2d';
+        ctx.fillRect(x, y, TILE, TILE);
+
+        ctx.fillStyle = '#a86b45';
+        ctx.fillRect(x + 2, y + 2, TILE - 4, 6);
+        ctx.fillRect(x + 2, y + 2, 5, TILE - 4);
+
+        ctx.fillStyle = '#522e19';
+        ctx.fillRect(x + 2, y + TILE - 7, TILE - 4, 5);
+        ctx.fillRect(x + TILE - 7, y + 2, 5, TILE - 4);
+
+        if (!hasAt(walls, w.x, w.y - 1)) {
+            ctx.fillStyle = '#c4875e';
+            ctx.fillRect(x + 2, y + 2, TILE - 4, 8);
+        }
+
+        ctx.fillStyle = 'rgba(62, 33, 18, 0.35)';
+        ctx.fillRect(x + 14, y + 18, 6, 5);
+        ctx.fillRect(x + 28, y + 28, 7, 5);
+
+        ctx.strokeStyle = '#331a0c';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+    });
+}
+
+function drawStones() {
+    stones.forEach(s => {
+        const x = s.x * TILE + 3;
+        const y = s.y * TILE + 3;
+        const size = TILE - 6;
+
+        // Khối đá xám bo góc đẩy được
+        ctx.fillStyle = '#64748b';
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(x, y, size, size, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // Vệt sáng 3D trên đá
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.roundRect(x + 4, y + 4, size - 12, 9, 4);
+        ctx.fill();
+
+        // Đường nứt nhỏ trang trí
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 14, y + 22);
+        ctx.lineTo(x + 22, y + 28);
+        ctx.lineTo(x + 30, y + 24);
+        ctx.stroke();
+    });
+}
+
+function drawSpikes() {
+    spikes.forEach(s => {
+        const x = s.x * TILE;
+        const y = s.y * TILE;
+
+        const spikeCount = 3;
+        const w = TILE / spikeCount;
+        for (let i = 0; i < spikeCount; i++) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + i * w + 2, y + TILE);
+            ctx.lineTo(x + i * w + w / 2, y + 12);
+            ctx.lineTo(x + (i + 1) * w - 2, y + TILE);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.moveTo(x + i * w + w / 2, y + 16);
+            ctx.lineTo(x + i * w + w / 2 - 3, y + TILE - 4);
+            ctx.lineTo(x + i * w + w / 2, y + TILE - 4);
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+}
+
+function drawApples() {
+    apples.forEach(a => {
+        const cx = a.x * TILE + TILE / 2;
+        const cy = a.y * TILE + TILE / 2 + 3;
+
+        ctx.fillStyle = '#dc2626';
+        ctx.strokeStyle = '#450a0a';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.beginPath();
+        ctx.arc(cx - 6, cy - 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 15);
+        ctx.lineTo(cx + 2, cy - 22);
+        ctx.stroke();
+
+        ctx.fillStyle = '#16a34a';
+        ctx.beginPath();
+        ctx.ellipse(cx + 7, cy - 20, 6, 3.5, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function drawPortal() {
+    const cx = portal.x * TILE + TILE / 2;
+    const cy = portal.y * TILE + TILE / 2;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(animFrame * 0.06);
+
+    const grad = ctx.createRadialGradient(0, 0, 3, 0, 0, 22);
+    grad.addColorStop(0, '#000000');
+    grad.addColorStop(0.6, '#1e1b4b');
+    grad.addColorStop(1, '#312e81');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 21, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let angle = 0; angle < Math.PI * 4; angle += 0.2) {
+        const r = angle * 1.4;
+        const px = Math.cos(angle) * r;
+        const py = Math.sin(angle) * r;
+        if (angle === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawWorm() {
+    if (worm.length === 0) return;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.strokeStyle = '#052e16';
+    ctx.lineWidth = 42;
+    ctx.beginPath();
+    worm.forEach((seg, i) => {
+        const cx = seg.x * TILE + TILE / 2;
+        const cy = seg.y * TILE + TILE / 2;
+        if (i === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+    });
+    if (worm.length === 1) {
+        ctx.lineTo(worm[0].x * TILE + TILE / 2 + 0.1, worm[0].y * TILE + TILE / 2);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = '#16a34a';
+    ctx.lineWidth = 36;
+    ctx.stroke();
+
+    worm.forEach((seg, i) => {
+        if (i === 0) return;
+        const cx = seg.x * TILE + TILE / 2;
+        const cy = seg.y * TILE + TILE / 2;
+        ctx.fillStyle = i % 2 === 0 ? '#15803d' : '#22c55e';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    const head = worm[0];
+    const hx = head.x * TILE + TILE / 2;
+    const hy = head.y * TILE + TILE / 2;
+
+    let dirX = 1, dirY = 0;
+    if (worm.length > 1) {
+        dirX = head.x - worm[1].x;
+        dirY = head.y - worm[1].y;
+    }
+
+    const faceOffsetX = dirX * 6;
+    const faceOffsetY = dirY * 4;
+
+    const eye1X = hx + faceOffsetX - 5;
+    const eye2X = hx + faceOffsetX + 7;
+    const eyeY = hy + faceOffsetY - 6;
+
+    [eye1X, eye2X].forEach(ex => {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#052e16';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ex, eyeY, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(ex + dirX * 1.5, eyeY + 1, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(ex - 6, eyeY - 7, 12, 5);
+    });
+
+    const mouthX = hx + faceOffsetX + 1;
+    const mouthY = hy + faceOffsetY + 7;
+
+    ctx.fillStyle = '#9333ea';
+    ctx.strokeStyle = '#3b0764';
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.ellipse(mouthX, mouthY - 2, 11, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(mouthX, mouthY + 3, 10, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function render() {
+    animFrame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBackground();
+    drawWalls();
+    drawSpikes();
+    drawStones();
+    drawPortal();
+    drawApples();
+    drawWorm();
+
+    requestAnimationFrame(render);
+}
+
+// ==================== ĐIỀU KHIỂN ====================
+
+document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (key === 'arrowup' || key === 'w') moveWorm(0, -1);
+    else if (key === 'arrowdown' || key === 's') moveWorm(0, 1);
+    else if (key === 'arrowleft' || key === 'a') moveWorm(-1, 0);
+    else if (key === 'arrowright' || key === 'd') moveWorm(1, 0);
+    else if (key === 'z') undoMove();
+    else if (key === 'r') loadLevel(currentLevelIdx);
+    else if (key === 'h') computeHint();
+});
+
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+    const handler = (e) => {
+        e.preventDefault();
+        if (dir === 'up') moveWorm(0, -1);
+        else if (dir === 'down') moveWorm(0, 1);
+        else if (dir === 'left') moveWorm(-1, 0);
+        else if (dir === 'right') moveWorm(1, 0);
+    };
+    btn.addEventListener('touchstart', handler, { passive: false });
+    btn.addEventListener('mousedown', handler);
+});
+
+hintBtn.addEventListener('click', computeHint);
+undoBtn.addEventListener('click', undoMove);
+resetBtn.addEventListener('click', () => loadLevel(currentLevelIdx));
+
+loadLevel(0);
+render();
+</script>
+</body>
+</html>
